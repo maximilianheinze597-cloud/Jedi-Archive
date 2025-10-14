@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jedi Archives</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            background-image: radial-gradient(white 1px, transparent 1px),
+                              radial-gradient(white 1px, transparent 1px);
+            background-size: 3px 3px;
+            background-position: 0 0, 1.5px 1.5px;
+            font-family: Arial, sans-serif;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        header {
+            background: black;
+            color: yellow;
+            text-align: center;
+            padding: 20px;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .yoda {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .yoda img {
+            width: 100px;
+            border-radius: 50%;
+        }
+
+        .bubble {
+            background-color: #222;
+            border-radius: 10px;
+            padding: 10px;
+            border: 2px solid yellow;
+        }
+
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        nav a {
+            color: yellow;
+            text-decoration: none;
+            border: 1px solid yellow;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            background-color: yellow;
+            color: black;
+        }
+
+        section {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: rgba(20, 20, 20, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        h2 {
+            color: yellow;
+            text-align: center;
+        }
+
+        img.planet {
+            width: 100%;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        iframe {
+            width: 100%;
+            height: 315px;
+            border-radius: 10px;
+            border: none;
+        }
+
+        footer {
+            text-align: center;
+            color: gray;
+            font-size: 0.8em;
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>Jedi Archives</header>
+
+    <div class="yoda">
+        <img src="yoda.jpg" alt="Yoda" />
+        <div class="bubble">„Möge die Macht mit dir sein.“</div>
+    </div>
+
+    <nav>
+        <a href="#planets">Planets</a>
+        <a href="#characters">Characters</a>
+        <a href="#vehicles">Vehicles</a>
+        <a href="#species">Species</a>
+        <a href="#films">Films</a>
+        <a href="#starships">Starships</a>
+    </nav>
+
+    <section id="planets">
+        <h2>Planets</h2>
+        <p>Entdecke berühmte Planeten aus der Galaxis weit, weit entfernt.</p>
+        <img src="tatooine.jpg" class="planet" alt="Tatooine" />
+        <img src="coruscant.jpg" class="planet" alt="Coruscant" />
+        <img src="naboo.jpg" class="planet" alt="Naboo" />
+    </section>
+
+    <section id="characters">
+        <h2>Characters</h2>
+        <p>Von Jedi-Meistern bis Sith-Lords – hier findest du alle bekannten Figuren und ihre Verbindungen.</p>
+    </section>
+
+    <section id="vehicles">
+        <h2>Vehicles</h2>
+        <p>Von Podracern bis zu imperialen Walkern – entdecke legendäre Fahrzeuge des Star Wars-Universums.</p>
+    </section>
+
+    <section id="species">
+        <h2>Species</h2>
+        <p>Erfahre mehr über die faszinierenden Spezies aus allen Ecken der Galaxis.</p>
+    </section>
+
+    <section id="films">
+        <h2>Films</h2>
+        <p>Erlebe die Star Wars-Saga noch einmal – mit Trailern und Beschreibungen.</p>
+        <iframe src="https://www.youtube.com/embed/Q0CbN8sfihY" allowfullscreen></iframe>
+    </section>
+
+    <section id="starships">
+        <h2>Starships</h2>
+        <p>Von der Millennium Falcon bis zum Todesstern – hier dreht sich alles um die mächtigsten Schiffe der Galaxis.</p>
+    </section>
+
+    <footer>Made with the Force ✨</footer>
+</body>
+</html>
