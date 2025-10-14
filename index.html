@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Jedi Archives — Enzyklopädie</title>
+<style>
+:root{
+  --bg:#040405; --panel:#0b0b0c; --muted:#9aa0a6; --accent:#ffe81f;
+  --card:#0f1113; --glass:rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:#eaeaea;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+/* header */
+header{display:flex;align-items:center;gap:14px;padding:12px 18px;background:linear-gradient(180deg, rgba(255,232,31,0.04), transparent);position:sticky;top:0;z-index:20}
+.logo{width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid rgba(255,232,31,0.12)}
+h1{margin:0;color:var(--accent);letter-spacing:1px;font-size:1.4rem}
+/* layout */
+.wrapper{display:flex;gap:16px;padding:16px;height:calc(100vh - 88px)}
+.sidebar{width:280px;background:linear-gradient(180deg, rgba(255,255,255,0.015), transparent);padding:12px;border-radius:12px;overflow:auto;border:1px solid rgba(255,255,255,0.02)}
+.content{flex:1;overflow:auto;padding:6px}
+.search{display:flex;gap:8px;margin-bottom:12px}
+.search input{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--panel);color:inherit}
+.btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;cursor:pointer}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.filters button{padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--muted);cursor:pointer}
+.filters button.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.navlink{display:block;padding:8px 10px;border-radius:8px;color:var(--muted);text-decoration:none;margin:6px 0;border:1px solid transparent}
+.navlink:hover{background:var(--glass);color:#fff}
+/* cards */
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.thumb{width:100%;height:160px;object-fit:cover;border-radius:8px;margin:8px 0}
+.h3{font-size:1.05rem;color:var(--accent);margin:0 0 6px 0}
+.small{font-size:0.9rem;color:var(--muted)}
+.tag{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,232,31,0.08);color:var(--accent);font-size:0.85rem;margin-right:6px}
+/* family tree */
+.tree-wrap{background:rgba(255,255,255,0.02);padding:10px;border-radius:10px}
+#tree-svg{width:100%;height:280px;display:block;background:linear-gradient(180deg, rgba(0,0,0,0.15), transparent);border-radius:8px}
+/* responsive */
+@media (max-width:900px){
+  .wrapper{flex-direction:column;height:auto}
+  .sidebar{width:100%}
+}
+/* film iframe */
+.video-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px}
+.video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;border-radius:6px}
+.details{color:var(--muted);font-size:0.95rem}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="yoda.jpg" alt="Yoda" class="logo" onerror="this.style.display='none'"/>
+  <h1>Jedi Archives — Enzyklopädie</h1>
+</header>
+
+<div class="wrapper">
+  <aside class="sidebar">
+    <div class="search">
+      <input id="q" placeholder="Suche Name, Film, Planet..." oninput="renderAll()"/>
+      <button class="btn" onclick="resetFilters()">Reset</button>
+    </div>
+
+    <div class="filters" id="filters">
+      <button class="active" data-filter="all" onclick="setFilter(this)">All</button>
+      <button data-filter="characters" onclick="setFilter(this)">Characters</button>
+      <button data-filter="planets" onclick="setFilter(this)">Planets</button>
+      <button data-filter="films" onclick="setFilter(this)">Films</button>
+      <button data-filter="vehicles" onclick="setFilter(this)">Vehicles</button>
+      <button data-filter="species" onclick="setFilter(this)">Species</button>
+      <button data-filter="starships" onclick="setFilter(this)">Starships</button>
+      <button data-filter="families" onclick="setFilter(this)">Families</button>
+    </div>
+
+    <nav>
+      <a class="navlink" href="#planets">Planets</a>
+      <a class="navlink" href="#characters">Characters</a>
+      <a class="navlink" href="#vehicles">Vehicles</a>
+      <a class="navlink" href="#species">Species</a>
+      <a class="navlink" href="#films">Films</a>
+      <a class="navlink" href="#starships">Starships</a>
+      <a class="navlink" href="#families">Family Trees</a>
+    </nav>
+
+    <div style="margin-top:12px">
+      <div class="small">Hinweis: Bilder liegen im Repo-Root. Um eigene Bilder zu verwenden, lade sie hoch und gib den Dateinamen in DATA.* als `img:'dateiname.jpg'` an.</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <!-- planets -->
+    <section id="planets" class="card">
+      <h2>Planets</h2>
+      <p class="small">Wähle oder suche Planeten.</p>
+      <div id="planets-grid" class="grid"></div>
+    </section>
+
+    <!-- characters -->
+    <section id="characters" class="card">
+      <h2>Characters</h2>
+      <p class="small">Steckbriefe, Rollen und erste Auftritte.</p>
+      <div id="characters-grid" class="grid"></div>
+    </section>
+
+    <!-- vehicles -->
+    <section id="vehicles" class="card">
+      <h2>Vehicles</h2>
+      <div id="vehicles-grid" class="grid"></div>
+    </section>
+
+    <!-- species -->
+    <section id="species" class="card">
+      <h2>Species</h2>
+      <div id="species-grid" class="grid"></div>
+    </section>
+
+    <!-- films -->
+    <section id="films" class="card">
+      <h2>Films</h2>
+      <p class="small">Erscheinungsjahr, Kurzbeschreibung und Trailer.</p>
+      <div id="films-grid" class="grid"></div>
+    </section>
+
+    <!-- starships -->
+    <section id="starships" class="card">
+      <h2>Starships</h2>
+      <div id="starships-grid" class="grid"></div>
+    </section>
+
+    <!-- families -->
+    <section id="families" class="card">
+      <h2>Family Trees</h2>
+      <p class="small">Interaktive Familienbäume (klicke Knoten).</p>
+      <div class="tree-wrap">
+        <svg id="tree-svg" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="family-list"></div>
+      </div>
+    </section>
+
+    <footer style="margin-top:18px" class="small">© 2025 Jedi Archives — Fanprojekt. Inhalte sind kurze Zusammenfassungen.</footer>
+  </main>
+</div>
+
+<script>
+/* ======================
+   DATA (erweitert)
+   ====================== */
+const DATA = {
+  planets:[
+    {id:'tatooine',name:'Tatooine',img:'tatooine.jpg',brief:'Wüstenplanet, Heim von Luke & Anakin',more:'Sand, zwei Sonnen, Mos Eisley.'},
+    {id:'coruscant',name:'Coruscant',img:'coruscant.jpg',brief:'Stadtplanet und Zentrum der Politik',more:'Senat, Regierungsgebäude.'},
+    {id:'naboo',name:'Naboo',img:'naboo.jpg',brief:'Grüne Welt mit Seen',more:'Heimat von Padmé Amidala.'}
+  ],
+  characters:[
+    {id:'anakin',name:'Anakin Skywalker',born:'41 BBY',role:'Jedi → Darth Vader',bio:'Talentierter Jedi, verführt von der Dunklen Seite. Vater von Luke & Leia.',films:['Episode I','Episode II','Episode III'],img:''},
+    {id:'padme',name:'Padmé Amidala',born:'46 BBY',role:'Königin & Senatorin',bio:'Ehefrau von Anakin, politische Figur von Naboo.',films:['Episode I','Episode II','Episode III'],img:''},
+    {id:'luke',name:'Luke Skywalker',born:'19 BBY',role:'Jedi',bio:'Sohn von Anakin; Held der Rebellion.',films:['IV','V','VI'],img:''},
+    {id:'leia',name:'Leia Organa',born:'19 BBY',role:'Prinzessin & General',bio:'Zwillingsschwester von Luke; Anführerin der Rebellion.',films:['IV','V','VI'],img:''},
+    {id:'han',name:'Han Solo',born:'? BBY',role:'Schmuggler',bio:'Captain der Millennium Falcon; Ehemann von Leia.',films:['IV','V','VI'],img:''},
+    {id:'yoda',name:'Yoda',born:'~896 BBY',role:'Jedi Meister',bio:'Weiser Jedi-Meister, Lehrer vieler.',films:['V','VI','I'],img:'yoda.jpg'},
+    {id:'obiwan',name:'Obi-Wan Kenobi',born:'57 BBY',role:'Jedi Meister',bio:'Meister von Anakin; später Mentor von Luke.',films:['I','II','III','IV'],img:''},
+    {id:'rey',name:'Rey',born:'? BBY',role:'Jedi',bio:'Zentrale Figur der Sequel-Trilogie.',films:['VII','VIII','IX'],img:''},
+    {id:'ben',name:'Ben Solo',born:'? BBY',role:'Kylo Ren / Ben Solo',bio:'Sohn von Leia & Han; conflict character.',films:['VII','VIII','IX'],img:''},
+    {id:'palpatine',name:'Sheev Palpatine',born:'? BBY',role:'Sith Lord / Emperor',bio:'Darth Sidious, politischer Strippenzieher.',films:['I','II','III','VI','IX'],img:''},
+    {id:'chewbacca',name:'Chewbacca',born:'? BBY',role:'Co-Pilot',bio:'Wookiee, treuer Freund von Han.',films:['IV','V','VI','VII'],img:''},
+    // (du kannst hier einfach weitere Charaktere hinzufügen)
+  ],
+  vehicles:[
+    {id:'falcon',name:'Millennium Falcon',brief:'Legendäres Corellianer-Schiff',img:''},
+    {id:'xwing',name:'X-Wing',brief:'Rebellisches Jagdflugzeug',img:''},
+    {id:'atat',name:'AT-AT',brief:'Imperiale Kampfmaschine',img:''}
+  ],
+  species:[
+    {id:'wookiee',name:'Wookiee',brief:'Groß, stark; Chewbacca ist Wookiee',img:''},
+    {id:'twi',name:"Twi'lek",brief:'Humanoide mit Kopflappen (Lekku)',img:''},
+    {id:'yodaspec',name:"Yoda's Species",brief:'Mysteröse, langlebige Spezies',img:''}
+  ],
+  films:[
+    {id:'ep4',title:'A New Hope',year:1977,desc:'Episode IV – Luke beginnt seine Reise.',trailer:'https://www.youtube.com/embed/vZ734NWnAHA'},
+    {id:'ep5',title:'The Empire Strikes Back',year:1980,desc:'Episode V – Wendepunkte und Enthüllungen.',trailer:'https://www.youtube.com/embed/JNwNXF9Y6kY'},
+    {id:'ep6',title:'Return of the Jedi',year:1983,desc:'Episode VI – Abschluss der klassischen Saga.',trailer:'https://www.youtube.com/embed/7L8p7_SLzvU'},
+    {id:'ep1',title:'The Phantom Menace',year:1999,desc:'Episode I – Anakin als Kind.',trailer:'https://www.youtube.com/embed/bD7bpG-zDJQ'},
+    {id:'ep2',title:'Attack of the Clones',year:2002,desc:'Episode II – Konflikt & Krieg.',trailer:'https://www.youtube.com/embed/gYbW1F_c9eM'},
+    {id:'ep3',title:'Revenge of the Sith',year:2005,desc:'Episode III – der Fall Anakins.',trailer:'https://www.youtube.com/embed/5UnjrG_N8hU'},
+    {id:'ep7',title:'The Force Awakens',year:2015,desc:'Episode VII – neue Helden.',trailer:'https://www.youtube.com/embed/sGbxmsDFVnE'},
+    {id:'ep8',title:'The Last Jedi',year:2017,desc:'Episode VIII – Kontroverser Teil.',trailer:'https://www.youtube.com/embed/Q0CbN8sfihY'},
+    {id:'ep9',title:'The Rise of Skywalker',year:2019,desc:'Episode IX – Finale der Sequels.',trailer:'https://www.youtube.com/embed/8Qn_spdM5Zg'}
+  ],
+  starships:[
+    {id:'falcon',name:'Millennium Falcon',brief:'Schnell & legendär',img:''},
+    {id:'tie',name:'TIE Fighter',brief:'Imperiale Jäger',img:''},
+    {id:'destroyer',name:'Star Destroyer',brief:'Imperiale Großschiffe',img:''}
+  ],
+  families:{
+    "Skywalker": {
+      members:[
+        {name:"Shmi Skywalker",note:"Mutter von Anakin"},
+        {name:"Anakin Skywalker / Darth Vader",note:"Vater von Luke & Leia"},
+        {name:"Padmé Amidala",note:"Ehefrau von Anakin"},
+        {name:"Luke Skywalker",note:"Sohn von Anakin"},
+        {name:"Leia Organa (Skywalker)",note:"Tochter von Anakin"},
+        {name:"Ben Solo",note:"Sohn von Leia & Han"}
+      ],
+      relations:[
+        ["Shmi Skywalker","Anakin Skywalker / Darth Vader"],
+        ["Anakin Skywalker / Darth Vader","Luke Skywalker"],
+        ["Anakin Skywalker / Darth Vader","Leia Organa (Skywalker)"],
+        ["Leia Organa (Skywalker)","Ben Solo"]
+      ]
+    },
+    "Organa/Solo": {
+      members:[
+        {name:"Bail Organa",note:"Ziehvater von Leia"},
+        {name:"Leia Organa (Skywalker)",note:"Prinzessin & General"},
+        {name:"Han Solo",note:"Ehemann von Leia"},
+        {name:"Ben Solo",note:"Sohn von Leia & Han"}
+      ],
+      relations:[
+        ["Bail Organa","Leia Organa (Skywalker)"],
+        ["Leia Organa (Skywalker)","Han Solo"],
+        ["Leia Organa (Skywalker)","Ben Solo"]
+      ]
+    },
+    "Kenobi": {
+      members:[
+        {name:"Obi-Wan Kenobi",note:"Jedi, Mentor von Anakin"},
+        {name:"Cliegg Lars",note:"Verwandtschaft zu Luke (Stieffamilie)"},
+        {name:"Owen Lars",note:"Pflegevater von Luke"}
+      ],
+      relations:[
+        ["Obi-Wan Kenobi","Anakin Skywalker / Darth Vader"]
+      ]
+    },
+    "Palpatine": {
+      members:[
+        {name:"Sheev Palpatine / Darth Sidious",note:"Sith-Lord / Imperator"}
+      ],
+      relations:[]
+    }
+  }
+};
+
+/* ======================
+   RENDER FUNCTIONS
+   ====================== */
+
+let activeFilter='all';
+function setFilter(btn){
+  document.querySelectorAll('#filters button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter = btn.dataset.filter;
+  renderAll();
+}
+function resetFilters(){ document.getElementById('q').value=''; setFilter(document.querySelector('#filters button[data-filter="all"]')); renderAll(); }
+
+function matches(q, text){
+  if(!q) return true;
+  return (text||'').toLowerCase().includes(q.toLowerCase());
+}
+
+function renderAll(){
+  const q=document.getElementById('q').value.trim();
+  renderPlanets(q); renderCharacters(q); renderVehicles(q); renderSpecies(q); renderFilms(q); renderStarships(q); renderFamilies(q);
+}
+
+/* planets */
+function renderPlanets(q){
+  const c=document.getElementById('planets-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='planets') return;
+  DATA.planets.forEach(p=>{
+    if(!matches(q, p.name+' '+p.brief+' '+p.more)) return;
+    const div=document.createElement('div'); div.className='card';
+    div.innerHTML = `<div class="h3">${p.name}</div><div class="small">${p.brief}</div>
+      ${p.img? `<img src="${p.img}" alt="${p.name}" class="thumb" onerror="this.style.display='none'">`:''}
+      <p class="details">${p.more}</p>`;
+    c.appendChild(div);
+  });
+}
+
+/* characters */
+function renderCharacters(q){
+  const c=document.getElementById('characters-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='characters') return;
+  DATA.characters.forEach(ch=>{
+    if(!matches(q, ch.name+' '+(ch.role||'')+' '+(ch.bio||''))) return;
+    const d=document.createElement('div'); d.className='card';
+    d.innerHTML = `<div class="h3">${ch.name}</div>
+      <div class="small">${ch.role} · geboren: ${ch.born||'—'}</div>
+      ${ch.img? `<img src="${ch.img}" class="thumb" alt="${ch.name}" onerror="this.style.display='none'">`:''}
+      <p>${ch.bio}</p>
+      <p class="small">Auftritte: ${ (ch.films||[]).join(', ') || '—' }</p>`;
+    c.appendChild(d);
+  });
+}
+
+/* vehicles */
+function renderVehicles(q){
+  const c=document.getElementById('vehicles-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='vehicles') return;
+  DATA.vehicles.forEach(v=>{
+    if(!matches(q, v.name+' '+v.brief)) return;
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML = `<div class="h3">${v.name}</div><div class="small">${v.brief}</div>`;
+    c.appendChild(el);
+  });
+}
+
+/* species */
+function renderSpecies(q){
+  const c=document.getElementById('species-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='species') return;
+  DATA.species.forEach(s=>{
+    if(!matches(q, s.name+' '+s.brief)) return;
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML = `<div class="h3">${s.name}</div><div class="small">${s.brief}</div>`;
+    c.appendChild(el);
+  });
+}
+
+/* films */
+function renderFilms(q){
+  const c=document.getElementById('films-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='films') return;
+  DATA.films.sort((a,b)=>a.year-b.year).forEach(f=>{
+    if(!matches(q, f.title+' '+f.desc+' '+f.year)) return;
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="h3">${f.title}</div><div class="small">${f.year}</div></div>
+        <div class="tag">${f.year}</div>
+      </div>
+      <p class="small">${f.desc}</p>
+      <div class="video-wrap"><iframe src="${f.trailer}" allowfullscreen></iframe></div>`;
+    c.appendChild(el);
+  });
+}
+
+/* starships */
+function renderStarships(q){
+  const c=document.getElementById('starships-grid'); c.innerHTML='';
+  if(activeFilter!=='all' && activeFilter!=='starships') return;
+  DATA.starships.forEach(s=>{
+    if(!matches(q, s.name+' '+s.brief)) return;
+    const el=document.createElement('div'); el.className='card';
+    el.innerHTML = `<div class="h3">${s.name}</div><div class="small">${s.brief}</div>`;
+    c.appendChild(el);
+  });
+}
+
+/* families (list + svg tree) */
+function renderFamilies(q){
+  const list = document.getElementById('family-list'); list.innerHTML='';
+  const svg = document.getElementById('tree-svg');
+  svg.innerHTML=''; // clear
+  const families = DATA.families;
+  if(activeFilter!=='all' && activeFilter!=='families') return;
+
+  // create a stacked list of families (click name to focus)
+  let idx=0;
+  for(const fname in families){
+    const fam = families[fname];
+    const wrapper = document.createElement('div'); wrapper.style.marginBottom='10px';
+    wrapper.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>${fname}</strong>
+        <div><button class="btn" onclick="drawFamily('${fname}')">Anzeigen</button></div>
+      </div>`;
+    // members short
+    const ul=document.createElement('ul'); ul.style.listStyle='none'; ul.style.padding='6px 0';
+    (fam.members||[]).forEach(m=>{
+      const li=document.createElement('li'); li.className='small'; li.textContent = `${m.name} — ${m.note||''}`;
+      ul.appendChild(li);
+    });
+    wrapper.appendChild(ul);
+    list.appendChild(wrapper);
+    idx++;
+  }
+
+  // draw first family by default
+  const keys = Object.keys(families);
+  if(keys.length) drawFamily(keys[0]);
+}
+
+/* draw family SVG: simple horizontal layout */
+function drawFamily(name){
+  const fam = DATA.families[name];
+  const svg = document.getElementById('tree-svg');
+  svg.innerHTML=''; // reset
+  if(!fam) return;
+  const members = fam.members || [];
+  // set sizes
+  const W = 1000, H = 300; svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const count = members.length;
+  const margin = 60;
+  const stepX = (W - 2*margin) / Math.max(1,count-1);
+  const yRoot = 60;
+  // create mapping name -> position
+  const pos = {};
+  members.forEach((m,i)=>{
+    pos[m.name] = {x: margin + i*stepX, y: yRoot + (i%2===0?0:40)};
+  });
+  // draw relations (lines)
+  (fam.relations||[]).forEach(rel=>{
+    const [a,b] = rel;
+    if(!(pos[a] && pos[b])) return;
+    const A = pos[a], B = pos[b];
+    const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const midX = (A.x + B.x)/2;
+    const d = `M ${A.x} ${A.y+20} Q ${midX} ${A.y+80} ${B.x} ${B.y+20}`;
+    line.setAttribute('d', d);
+    line.setAttribute('stroke','rgba(255,232,31,0.28)');
+    line.setAttribute('fill','none');
+    line.setAttribute('stroke-width','2');
+    svg.appendChild(line);
+  });
+  // draw nodes
+  members.forEach(m=>{
+    const p = pos[m.name];
+    // group
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('transform', `translate(${p.x},${p.y})`);
+    // circle
+    const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('r','18'); c.setAttribute('fill','rgba(255,232,31,0.08)');
+    c.setAttribute('stroke','rgba(255,232,31,0.5)'); c.setAttribute('stroke-width','2');
+    // text
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('y','5'); t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','10');
+    t.setAttribute('fill','#fff'); t.textContent = m.name.split(' ')[0]; // show short
+    // interaction: click shows full info below
+    g.style.cursor='pointer';
+    g.addEventListener('click', ()=> showPersonDetail(m));
+    g.appendChild(c); g.appendChild(t);
+    svg.appendChild(g);
+  });
+}
+
+/* show detail of a family member under the svg */
+function showPersonDetail(member){
+  const list = document.getElementById('family-list');
+  // clear previous details
+  const detail = document.createElement('div'); detail.className='card';
+  detail.innerHTML = `<div class="h3">${member.name}</div><div class="small">${member.note||''}</div>`;
+  // append at top
+  list.insertBefore(detail, list.firstChild);
+  // smooth scroll
+  detail.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* initial render */
+renderAll();
+
+/* keyboard enter triggers */
+document.getElementById('q').addEventListener('keydown', function(e){ if(e.key==='Enter') renderAll(); });
+
+</script>
+</body>
+</html>
