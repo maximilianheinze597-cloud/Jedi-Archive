@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Jedi Archives</title>
+<style>
+:root{
+  --bg:#040405; --panel:#0b0b0c; --muted:#9aa0a6; --accent:#ffe81f;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#eee;overflow-x:hidden}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(180deg,rgba(255,232,31,0.03),transparent);position:sticky;top:0;z-index:50}
+.logo{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,232,31,0.12)}
+.title{color:var(--accent);font-weight:700;letter-spacing:1px}
+.controls{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:8px 10px;border-radius:8px;cursor:pointer}
+.container{display:flex;gap:14px;padding:14px;height:calc(100vh - 88px);flex-wrap:wrap}
+.sidebar{width:260px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);overflow:auto;flex-shrink:0}
+.main{flex:1;overflow:auto;padding:8px;min-width:300px}
+.search input{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+.section{margin-bottom:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+.h2{color:var(--accent);margin:0 0 8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;transition:transform .18s,box-shadow .18s;cursor:default}
+.card:hover{transform:translateY(-6px);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+.thumb{width:100%;height:140px;object-fit:cover;border-radius:8px}
+.small{color:var(--muted);font-size:0.9rem}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.fadein{animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.footer{padding:12px;text-align:center;color:#8a8f95;font-size:0.85rem}
+
+/* responsive */
+@media (max-width:900px){.container{flex-direction:column;height:auto}.sidebar{width:100%}}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="yoda.jpg" class="logo" alt="Yoda" onerror="this.style.display='none'">
+  <div class="title">Jedi Archives</div>
+  <div class="controls">
+    <button id="themeBtn" class="btn">🌗 Theme</button>
+    <button id="playBtn" class="btn">▶ Cantina spielen</button>
+    <button id="factBtn" class="btn">✨ Zufalls-Fact</button>
+  </div>
+</header>
+
+<div class="container">
+  <aside class="sidebar">
+    <div class="search section">
+      <input id="q" placeholder="Suche z. B. Luke, Tatooine, Falcon..." oninput="renderAll()" />
+    </div>
+
+    <div class="section">
+      <div class="h2">Filter</div>
+      <div class="row">
+        <button class="btn" onclick="setFilter('all')">Alle</button>
+        <button class="btn" onclick="setFilter('characters')">Charaktere</button>
+        <button class="btn" onclick="setFilter('planets')">Planeten</button>
+        <button class="btn" onclick="setFilter('films')">Filme</button>
+        <button class="btn" onclick="setFilter('starships')">Schiffe</button>
+        <button class="btn" onclick="setFilter('families')">Familien</button>
+      </div>
+    </div>
+
+    <div id="factBox" class="section small" style="display:none"></div>
+
+    <div id="audio-hint" class="section small">
+      Hinweis: Lade optional <code>cantina_blues.mp3</code> ins Repo-Root, damit der Play-Button Ton abspielt.
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="characters" class="section fadein">
+      <h3 class="h2">Charaktere</h3>
+      <div id="characters-grid" class="grid"></div>
+    </section>
+
+    <section id="planets" class="section fadein">
+      <h3 class="h2">Planeten</h3>
+      <div id="planets-grid" class="grid"></div>
+    </section>
+
+    <section id="starships" class="section fadein">
+      <h3 class="h2">Starships & Vehicles</h3>
+      <div id="starships-grid" class="grid"></div>
+    </section>
+
+    <section id="films" class="section fadein">
+      <h3 class="h2">Filme</h3>
+      <div id="films-grid" class="grid"></div>
+    </section>
+
+    <section id="families" class="section fadein">
+      <h3 class="h2">Family Trees</h3>
+      <div id="families-list"></div>
+    </section>
+
+    <div class="footer">© 2025 Jedi Archives — Fanprojekt</div>
+  </main>
+</div>
+
+<audio id="cantina" src="cantina_blues.mp3" preload="none"></audio>
+
+<script>
+/* ---------------- DATA ---------------- */
+const DATA = {
+  characters:[{id:'luke',name:'Luke Skywalker',role:'Jedi',born:'19 BBY',img:'luke.jpg',bio:'Sohn von Anakin, Held der Rebellion.'}],
+  planets:[{id:'tatooine',name:'Tatooine',img:'tatooine.jpg',brief:'Wüstenplanet mit zwei Sonnen.'}],
+  starships:[{id:'falcon',name:'Millennium Falcon',img:'falcon.jpg',brief:'Schnelles Corellianer-Schiff.'}],
+  films:[{id:'ep4',title:'A New Hope',year:1977,desc:'Episode IV – Beginn der Saga.',yt:'https://www.youtube.com/embed/vZ734NWnAHA'}],
+  families:{"Skywalker":["Shmi","Anakin / Vader","Luke","Leia","Ben Solo"]},
+  facts:["Yoda war oft eine Puppe, nicht CGI.","Der erste Film hieß nur Star Wars (1977)."]
+};
+
+/* ---------------- STATE ---------------- */
+let active='all';
+function setFilter(k){active=k;renderAll();}
+function qmatch(q,s){return!q||(s||'').toLowerCase().includes(q.toLowerCase());}
+
+/* ---------------- RENDER ---------------- */
+function renderAll(){
+  const q=document.getElementById('q').value.trim();
+  renderGrid('characters-grid',DATA.characters.filter(c=>qmatch(q,c.name+c.bio)),i=>`
+    <div class="card"><img src="${i.img}" class="thumb"><div><b>${i.name}</b><div class="small">${i.role}</div></div></div>`);
+  renderGrid('planets-grid',DATA.planets.filter(p=>qmatch(q,p.name+p.brief)),i=>`
+    <div class="card"><img src="${i.img}" class="thumb"><div><b>${i.name}</b><div class="small">${i.brief}</div></div></div>`);
+  renderGrid('starships-grid',DATA.starships.filter(s=>qmatch(q,s.name+s.brief)),i=>`
+    <div class="card"><img src="${i.img}" class="thumb"><div><b>${i.name}</b><div class="small">${i.brief}</div></div></div>`);
+  renderGrid('films-grid',DATA.films.filter(f=>qmatch(q,f.title+f.desc)),i=>`
+    <div class="card"><b>${i.title} (${i.year})</b><div class="small">${i.desc}</div><div style="margin-top:8px"><iframe src="${i.yt}" style="width:100%;height:180px;border-radius:8px" allowfullscreen></iframe></div></div>`);
+  renderFamilies();
+  ['characters','planets','starships','films','families'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.style.display=(active==='all'||active===id)?'block':'none';
+  });
+}
+function renderGrid(id,list,templ){document.getElementById(id).innerHTML=list.map(templ).join('')||'<div class="small">Keine Einträge</div>';}
+function renderFamilies(){
+  const el=document.getElementById('families-list');
+  el.innerHTML=Object.keys(DATA.families).map(f=>`<div class="card"><b>${f}</b><div class="small">${DATA.families[f].join(' → ')}</div></div>`).join('');
+}
+
+/* ---------------- FACTS ---------------- */
+document.getElementById('factBtn').addEventListener('click',()=>{
+  const f=DATA.facts[Math.floor(Math.random()*DATA.facts.length)];
+  const fb=document.getElementById('factBox');
+  fb.style.display='block';fb.textContent=f;
+  setTimeout(()=>fb.style.display='none',7000);
+});
+
+/* ---------------- AUDIO ---------------- */
+const audio=document.getElementById('cantina');
+const playBtn=document.getElementById('playBtn');
+playBtn.addEventListener('click',()=>{
+  if(!audio.src){alert('Keine Datei cantina_blues.mp3 gefunden.');return;}
+  audio.paused?audio.play().catch(()=>alert('Autoplay blockiert – bitte erneut tippen.')):audio.pause();
+  playBtn.textContent=audio.paused?'▶ Cantina spielen':'⏸ Cantina an';
+});
+
+/* ---------------- THEME ---------------- */
+const themeBtn=document.getElementById('themeBtn');
+function applyTheme(t){
+  if(t==='light'){document.documentElement.style.setProperty('--bg','#f7f7f7');document.body.style.color='#111';}
+  else{document.documentElement.style.removeProperty('--bg');document.body.style.color='#eee';}
+  localStorage.setItem('ja-theme',t);
+}
+themeBtn.addEventListener('click',()=>{
+  const cur=localStorage.getItem('ja-theme')||'dark';
+  applyTheme(cur==='dark'?'light':'dark');
+});
+(function(){applyTheme(localStorage.getItem('ja-theme')||'dark');})();
+
+/* ---------------- INITIAL ---------------- */
+renderAll();
+
+/* --- Hinweis automatisch ausblenden --- */
+const audioHint=document.getElementById('audio-hint');
+fetch('cantina_blues.mp3',{method:'HEAD'}).then(r=>{if(r.ok)audioHint.style.display='none';}).catch(()=>{audioHint.style.display='block';});
+</script>
+</body>
+</html>
