@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Jedi Archives</title>
+<style>
+:root{
+  --bg:#040405; --panel:#0b0b0c; --muted:#9aa0a6; --accent:#ffe81f;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:#eee}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(180deg,rgba(255,232,31,0.03),transparent);position:sticky;top:0;z-index:50}
+.logo{width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid rgba(255,232,31,0.12)}
+.title{color:var(--accent);font-weight:700;letter-spacing:1px}
+.controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;padding:8px 10px;border-radius:8px;cursor:pointer}
+.container{display:flex;gap:14px;padding:14px;height:calc(100vh - 88px)}
+.sidebar{width:260px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);overflow:auto}
+.main{flex:1;overflow:auto;padding:8px}
+.search input{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+.section{margin-bottom:14px;padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+.h2{color:var(--accent);margin:0 0 8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card{background:rgba(255,255,255,0.02);padding:10px;border-radius:8px;transition:transform .18s,box-shadow .18s;cursor:default}
+.card:hover{transform:translateY(-6px);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+.thumb{width:100%;height:140px;object-fit:cover;border-radius:8px}
+.small{color:var(--muted);font-size:0.9rem}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.toggle{display:inline-flex;align-items:center;gap:8px}
+.fadein{animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.footer{padding:12px;text-align:center;color:#8a8f95;font-size:0.85rem}
+
+/* compact responsive */
+@media (max-width:900px){.container{flex-direction:column;height:auto}.sidebar{width:100%}}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="yoda.jpg" class="logo" alt="Yoda" onerror="this.style.display='none'">
+  <div class="title">Jedi Archives</div>
+  <div class="controls">
+    <button id="themeBtn" class="btn">🌗 Theme</button>
+    <button id="playBtn" class="btn">▶ Cantina spielen</button>
+    <button id="factBtn" class="btn">✨ Zufalls-Fact</button>
+  </div>
+</header>
+
+<div class="container">
+  <aside class="sidebar">
+    <div class="search section">
+      <input id="q" placeholder="Suche z. B. Luke, Tatooine, Falcon..." oninput="renderAll()" />
+    </div>
+
+    <div class="section">
+      <div class="h2">Filter</div>
+      <div class="row">
+        <button class="btn" onclick="setFilter('all')">Alle</button>
+        <button class="btn" onclick="setFilter('characters')">Charaktere</button>
+        <button class="btn" onclick="setFilter('planets')">Planeten</button>
+        <button class="btn" onclick="setFilter('films')">Filme</button>
+        <button class="btn" onclick="setFilter('starships')">Schiffe</button>
+        <button class="btn" onclick="setFilter('families')">Familien</button>
+      </div>
+    </div>
+
+    <div id="factBox" class="section small" style="display:none"></div>
+    <div class="section small">Hinweis: Lade optional <code>cantina.mp3</code> ins Repo-Root, damit der Play-Button Ton abspielt.</div>
+  </aside>
+
+  <main class="main">
+    <section id="characters" class="section fadein">
+      <h3 class="h2">Charaktere</h3>
+      <div id="characters-grid" class="grid"></div>
+    </section>
+
+    <section id="planets" class="section fadein">
+      <h3 class="h2">Planeten</h3>
+      <div id="planets-grid" class="grid"></div>
+    </section>
+
+    <section id="starships" class="section fadein">
+      <h3 class="h2">Starships & Vehicles</h3>
+      <div id="starships-grid" class="grid"></div>
+    </section>
+
+    <section id="films" class="section fadein">
+      <h3 class="h2">Filme</h3>
+      <div id="films-grid" class="grid"></div>
+    </section>
+
+    <section id="families" class="section fadein">
+      <h3 class="h2">Family Trees</h3>
+      <div id="families-list"></div>
+    </section>
+
+    <div class="footer">© 2025 Jedi Archives — Fanprojekt</div>
+  </main>
+</div>
+
+<!-- hidden audio element: put cantina.mp3 in repo root to play -->
+<audio id="cantina" src="cantina.mp3" preload="none"></audio>
+
+<script>
+/* ---------- DATA (kompakt) ---------- */
+const DATA = {
+  characters:[
+    {id:'luke',name:'Luke Skywalker',role:'Jedi',born:'19 BBY',img:'luke.jpg',bio:'Sohn von Anakin, Held der Rebellion.'},
+    {id:'leia',name:'Leia Organa',role:'General',born:'19 BBY',img:'leia.jpg',bio:'Prinzessin, Anführerin der Rebellion.'},
+    {id:'anakin',name:'Anakin Skywalker',role:'Jedi → Darth Vader',born:'41 BBY',img:'anakin.jpg',bio:'Vom Jedi zum Sith.'},
+    {id:'vader',name:'Darth Vader',role:'Sith',born:'41 BBY',img:'vader.jpg',bio:'Ehemals Anakin Skywalker.'},
+    {id:'yoda',name:'Yoda',role:'Jedi Meister',born:'~896 BBY',img:'yoda.jpg',bio:'Weiser Meister des Jedi-Ordens.'},
+    {id:'obiwan',name:'Obi-Wan Kenobi',role:'Jedi Meister',born:'57 BBY',img:'obiwan.jpg',bio:'Mentor von Anakin & Luke.'},
+    {id:'han',name:'Han Solo',role:'Pilot',born:'? BBY',img:'han.jpg',bio:'Captain der Millennium Falcon.'},
+    {id:'padme',name:'Padmé Amidala',role:'Königin & Senatorin',born:'46 BBY',img:'padme.jpg',bio:'Mutter von Luke & Leia.'},
+    {id:'chewbacca',name:'Chewbacca',role:'Co-Pilot',born:'? BBY',img:'chewbacca.jpg',bio:'Wookiee, treuer Freund Han.'},
+    {id:'kylo',name:'Kylo Ren',role:'Dark',born:'? BBY',img:'kylo.jpg',bio:'Ben Solo, von der Dunkelheit verführt.'},
+    {id:'rey',name:'Rey',role:'Jedi',born:'? BBY',img:'rey.jpg',bio:'Zentrale Figur der Sequels.'},
+    {id:'palpatine',name:'Sheev Palpatine',role:'Sith Lord',img:'palpatine.jpg',bio:'Darth Sidious, Imperator.'},
+    {id:'ahsoka',name:'Ahsoka Tano',role:'Jedi / Ex-Jedi',img:'ahsoka.jpg',bio:'Padawan von Anakin.'},
+    {id:'r2',name:'R2-D2',role:'Droid',img:'r2d2.jpg',bio:'Unentbehrlicher Astromech.'},
+    {id:'c3po',name:'C-3PO',role:'Droid',img:'c3po.jpg',bio:'Protokolldroide, Übersetzer.'}
+  ],
+  planets:[
+    {id:'tatooine',name:'Tatooine',img:'tatooine.jpg',brief:'Wüstenplanet; zwei Sonnen.'},
+    {id:'naboo',name:'Naboo',img:'naboo.jpg',brief:'Grüne Welt; Padmés Heimat.'},
+    {id:'coruscant',name:'Coruscant',img:'coruscant.jpg',brief:'Stadtplanet; Zentrum der Politik.'},
+    {id:'mustafar',name:'Mustafar',img:'mustafar.jpg',brief:'Vulkanwelt; Duellplatz.'}
+  ],
+  starships:[
+    {id:'falcon',name:'Millennium Falcon',img:'falcon.jpg',brief:'Schnelles Corellianer-Schiff.'},
+    {id:'xwing',name:'X-Wing',img:'xwing.jpg',brief:'Rebellischer Sternenjäger.'},
+    {id:'tie',name:'TIE Fighter',img:'tiefighter.jpg',brief:'Imperialer Jäger.'},
+    {id:'at-at',name:'AT-AT',img:'at-at.jpg',brief:'Imperiale Laufmaschine.'}
+  ],
+  films:[
+    {id:'ep4',title:'A New Hope',year:1977,desc:'Episode IV – Beginn der Saga.',yt:'https://www.youtube.com/embed/vZ734NWnAHA'},
+    {id:'ep5',title:'The Empire Strikes Back',year:1980,desc:'Episode V – Wendepunkt.',yt:'https://www.youtube.com/embed/JNwNXF9Y6kY'},
+    {id:'ep6',title:'Return of the Jedi',year:1983,desc:'Episode VI – Abschluss.',yt:'https://www.youtube.com/embed/7L8p7_SLzvU'},
+    {id:'ep7',title:'The Force Awakens',year:2015,desc:'Episode VII – neue Helden.',yt:'https://www.youtube.com/embed/sGbxmsDFVnE'}
+  ],
+  families:{
+    "Skywalker":[ "Shmi Skywalker","Anakin Skywalker / Darth Vader","Luke Skywalker","Leia Organa","Ben Solo" ],
+    "Organa/Solo":[ "Bail Organa","Leia Organa","Han Solo","Ben Solo" ],
+    "Kenobi":[ "Obi-Wan Kenobi","Cliegg Lars","Owen Lars" ],
+    "Palpatine":[ "Sheev Palpatine / Darth Sidious" ]
+  },
+  facts:[
+    "Der ursprüngliche Filmtitel von Episode IV war einfach 'Star Wars' (1977).",
+    "Yoda ist in vielen Filmen ein praktischer Effekt (Puppe) und später CGI.",
+    "Die Cantina-Szene in Episode IV enthielt damals neuartige Sound-Creations.",
+    "George Lucas benutzte für Coruscant viele Bilder von modernen Städten."
+  ]
+};
+
+/* ---------- state & helpers ---------- */
+let active='all';
+function setFilter(k){ active=k; renderAll(); }
+function qmatch(q,s){ return !q || (s||'').toLowerCase().includes(q.toLowerCase()); }
+
+/* ---------- render compact ---------- */
+function renderAll(){
+  const q=document.getElementById('q').value.trim();
+  renderGrid('characters-grid', DATA.characters.filter(c=>qmatch(q,c.name+' '+c.bio)), item=>`
+    <div class="card"><img src="${item.img||''}" class="thumb" onerror="this.style.display='none'"><div><b>${item.name}</b><div class="small">${item.role||''}</div><div class="small">${item.bio||''}</div></div></div>`);
+  renderGrid('planets-grid', DATA.planets.filter(p=>qmatch(q,p.name+' '+p.brief)), item=>`
+    <div class="card"><img src="${item.img||''}" class="thumb" onerror="this.style.display='none'><div><b>${item.name}</b><div class="small">${item.brief||''}</div></div></div>`);
+  renderGrid('starships-grid', DATA.starships.filter(s=>qmatch(q,s.name+' '+s.brief)), item=>`
+    <div class="card"><img src="${item.img||''}" class="thumb" onerror="this.style.display='none'><div><b>${item.name}</b><div class="small">${item.brief||''}</div></div></div>`);
+  renderGrid('films-grid', DATA.films.filter(f=>qmatch(q,f.title+' '+f.desc)), item=>`
+    <div class="card"><div><b>${item.title} (${item.year})</b><div class="small">${item.desc}</div></div>
+    <div style="margin-top:8px" class="video-wrap"><iframe src="${item.yt}" style="width:100%;height:180px;border-radius:8px" allowfullscreen></iframe></div></div>`);
+  renderFamilies();
+  // hide sections if filter active
+  ['characters','planets','starships','films','families'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(active==='all' || active===id) el.style.display='block'; else el.style.display='none';
+  });
+}
+function renderGrid(containerId, list, templ){
+  const container=document.getElementById(containerId); if(!container) return;
+  container.innerHTML = list.map(templ).join('') || '<div class="small">Keine Einträge</div>';
+}
+
+/* families */
+function renderFamilies(){
+  const el=document.getElementById('families-list'); el.innerHTML='';
+  for(const fam in DATA.families){
+    const members = DATA.families[fam];
+    const div = document.createElement('div'); div.className='card';
+    div.innerHTML = `<b>${fam}</b><div class="small">${members.join(' → ')}</div>
+      <div style="margin-top:8px"><button class="btn" onclick="focusFamily('${fam}')">Details</button></div>`;
+    el.appendChild(div);
+  }
+}
+function focusFamily(name){
+  const members = DATA.families[name] || [];
+  const html = members.map(m=>`<div class="card small" style="margin-top:8px"><b>${m}</b></div>`).join('');
+  const el=document.getElementById('families-list'); el.innerHTML = `<div class="section"><button class="btn" onclick="renderAll()">◀ zurück</button><h3>${name}</h3>${html}</div>`;
+}
+
+/* ---------- facts & theme & audio ---------- */
+document.getElementById('factBtn').addEventListener('click', ()=>{
+  const f = DATA.facts[Math.floor(Math.random()*DATA.facts.length)];
+  const fb = document.getElementById('factBox'); fb.style.display='block'; fb.textContent = f;
+  setTimeout(()=>fb.style.display='none',7000);
+});
+
+/* ---------- NEUER PLAY BUTTON FÜR SAFARI ---------- */
+const audio = document.getElementById('cantina');
+const playBtn = document.getElementById('playBtn');
+
+playBtn.addEventListener('click', () => {
+  if (!audio.src) {
+    alert('Keine Datei "cantina.mp3" im Repo-Root gefunden. Lade sie hoch, damit Musik spielt.');
+    return;
+  }
+
+  if (audio.paused) {
+    audio.load(); // Datei laden
+    audio.play().then(() => {
+      playBtn.textContent = '⏸ Cantina an';
+    }).catch(err => {
+      alert('Playback blockiert — bitte tippe nochmal.');
+      console.log(err);
+    });
+  } else {
+    audio.pause();
+    playBtn.textContent = '▶ Cantina spielen';
+  }
+
+  audio.addEventListener('ended', () => {
+    playBtn.textContent = '▶ Cantina spielen';
+  });
+});
+
+/* Theme */
+const themeBtn = document.getElementById('themeBtn');
+function applyTheme(t){
+  if(t==='light'){ document.documentElement.style.setProperty('--bg','#f7f7f7'); document.body.style.color='#111'; }
+  else { document.documentElement.style.removeProperty('--bg'); document.body.style.color='#eee'; }
+  localStorage.setItem('ja-theme', t);
+}
+themeBtn.addEventListener('click', ()=>{
+  const cur = localStorage.getItem('ja-theme')||'dark';
+  applyTheme(cur==='dark'?'light':'dark');
+  themeBtn.textContent = (localStorage.getItem('ja-theme')==='dark')? '🌗 Theme' : '🌞 Theme';
+});
+(function initTheme(){ const t=localStorage.getItem('ja-theme')||'dark'; applyTheme(t); })();
+
+/* key handlers */
+document.getElementById('q').addEventListener('keydown', e=>{ if(e.key==='Enter') renderAll(); });
+
+/* initial render */
+renderAll();
+</script>
+</body>
+</html>
