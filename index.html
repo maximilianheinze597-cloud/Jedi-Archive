@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedi Archive</title>
+<style>
+  body { font-family: 'Arial', sans-serif; margin:0; background:#0b0b0b; color:#fff; overflow-x:hidden; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:#111; }
+  .logo { height:50px; border-radius:8px; }
+  h1 { margin:0; font-size:1.4em; color:#ffe81f; }
+  .section { padding:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; }
+  .card { background:#222; padding:10px; border-radius:10px; text-align:center; }
+  .btn { background:#ffe81f; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; font-weight:bold; }
+  .btn:hover { background:#fff24d; }
+  #botModalBg { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; }
+  #botModal { background:#222; padding:20px; border-radius:10px; width:90%; max-width:400px; color:white; }
+  textarea { width:100%; height:80px; }
+  input, button { font-family:inherit; }
+  /* Denkpunkte Animation */
+  @keyframes blink {
+    0% { opacity:0.2; }
+    20% { opacity:1; }
+    100% { opacity:0.2; }
+  }
+  .dot {
+    display:inline-block;
+    animation: blink 1s infinite;
+    font-weight:bold;
+    color:#aaa;
+  }
+  .dot:nth-child(2){ animation-delay:0.2s; }
+  .dot:nth-child(3){ animation-delay:0.4s; }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="logo.png" class="logo" alt="Jedi Archives Logo">
+    <h1>Jedi Archive</h1>
+  </div>
+  <div>
+    <button id="themeToggle" class="btn">🌗 Theme</button>
+    <button id="playMusicBtn" class="btn">🎵 Musik</button>
+    <button id="openBotBtn" class="btn">🤖 KI-Bot</button>
+    <button id="openAdminBtn" class="btn">⚙️ Admin</button>
+  </div>
+</header>
+
+<audio id="music" src="cantina_blues.mp3" preload="none" loop></audio>
+<audio id="r2d2" src="r2d2.mp3" preload="auto"></audio>
+
+<div class="section">
+  <input id="q" placeholder="Suche..." style="width:100%;padding:8px;border-radius:5px;border:none;margin-bottom:10px;">
+</div>
+
+<div class="section" id="characters">
+  <h2>Charaktere</h2>
+  <div id="characters-grid" class="grid"></div>
+</div>
+
+<div class="section" id="planets">
+  <h2>Planeten</h2>
+  <div id="planets-grid" class="grid"></div>
+</div>
+
+<div class="section" id="films">
+  <h2>Filme</h2>
+  <div id="films-grid" class="grid"></div>
+</div>
+
+<!-- KI Bot Modal -->
+<div id="botModalBg">
+  <div id="botModal">
+    <h3>🤖 Jedi KI-Bot</h3>
+    <div id="botMessages" style="height:200px;overflow:auto;border:1px solid #333;padding:5px;margin-bottom:10px;"></div>
+    <input id="botInput" placeholder="Frag mich etwas über Star Wars..." style="width:100%;padding:5px;">
+    <button id="botSendBtn" class="btn">Senden</button>
+    <button id="closeBotModal" class="btn" style="background:#444;color:#fff;">Schließen</button>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;">
+  <div id="adminModal" style="background:#222;padding:20px;border-radius:10px;width:90%;max-width:400px;color:white;">
+    <h3>⚙️ Admin-Login</h3>
+    <input id="adminPassInput" type="password" placeholder="Passwort eingeben" style="width:100%;padding:5px;">
+    <button id="adminLoginBtn" class="btn" style="margin-top:10px;">Login</button>
+    <div id="adminPanel" style="display:none;margin-top:15px;">
+      <textarea id="adminEditArea"></textarea>
+      <button id="saveDataBtn" class="btn" style="margin-top:10px;">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// -------- DATA ---------
+let DATA = {
+  characters: [
+    {name:'Luke Skywalker', role:'Jedi Meister', bio:'Der legendäre Jedi, Sohn von Anakin Skywalker.', img:'luke.jpg'},
+    {name:'Yoda', role:'Jedi Meister', bio:'Einer der mächtigsten Jedi-Meister in der Geschichte.', img:'yoda.jpg'},
+    {name:'Leia Organa', role:'Prinzessin', bio:'Anführerin der Rebellion und Schwester von Luke.', img:'leia.jpg'},
+    {name:'Obi-Wan Kenobi', role:'Jedi Meister', bio:'Lehrer von Anakin und Luke Skywalker.', img:'obiwan.jpg'},
+    {name:'Darth Vader', role:'Sith Lord', bio:'Früher Anakin Skywalker, jetzt Sith Lord.', img:'vader.jpg'},
+    {name:'Han Solo', role:'Smuggler', bio:'Bekannter Pilot des Millennium Falken.', img:'han.jpg'}
+  ],
+  planets: [
+    {name:'Tatooine', brief:'Wüstenplanet und Heimat von Anakin und Luke.'},
+    {name:'Coruscant', brief:'Zentralplanet der Galaxis und Sitz des Jedi-Rats.'},
+    {name:'Naboo', brief:'Grüner, friedlicher Planet und Heimat von Padmé Amidala.'},
+    {name:'Hoth', brief:'Eisplanet, Schauplatz der Rebellenbasis.'},
+    {name:'Endor', brief:'Waldmond mit Ewoks.'}
+  ],
+  films: [
+    {title:'Eine neue Hoffnung', year:1977, desc:'Der Beginn der klassischen Trilogie.'},
+    {title:'Das Imperium schlägt zurück', year:1980, desc:'Das Imperium bekämpft die Rebellion.'},
+    {title:'Die Rückkehr der Jedi-Ritter', year:1983, desc:'Luke stellt sich Darth Vader.'},
+    {title:'Das Erwachen der Macht', year:2015, desc:'Neue Bedrohungen tauchen auf.'}
+  ]
+};
+
+// -------- RENDER ---------
+function renderGrid(id, list, tpl){
+  const el=document.getElementById(id);
+  el.innerHTML = list.map(tpl).join('') || '<div class="small">Keine Einträge</div>';
+}
+
+function renderAll(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  renderGrid('characters-grid', DATA.characters.filter(c=>c.name.toLowerCase().includes(q)||c.bio.toLowerCase().includes(q)), item=>`
+    <div class="card">
+      <img src="${item.img||''}" class="thumb" onerror="this.style.display='none'">
+      <div><b>${item.name}</b></div>
+      <div class="small">${item.role||''}</div>
+      <div class="small">${item.bio||''}</div>
+    </div>`);
+  renderGrid('planets-grid', DATA.planets.filter(p=>p.name.toLowerCase().includes(q)||p.brief.toLowerCase().includes(q)), p=>`
+    <div class="card"><div><b>${p.name}</b></div><div class="small">${p.brief}</div></div>`);
+  renderGrid('films-grid', DATA.films.filter(f=>f.title.toLowerCase().includes(q)||f.desc.toLowerCase().includes(q)), f=>`
+    <div class="card"><div><b>${f.title} (${f.year})</b></div><div class="small">${f.desc}</div></div>`);
+}
+renderAll();
+
+// -------- MUSIC ---------
+const music=document.getElementById('music');
+document.getElementById('playMusicBtn').onclick=()=>{ if(music.paused) music.play(); else music.pause(); };
+
+// -------- THEME ---------
+let dark=true;
+document.getElementById('themeToggle').onclick=()=>{
+  dark=!dark;
+  document.body.style.background=dark?'#0b0b0b':'#fafafa';
+  document.body.style.color=dark?'#fff':'#111';
+};
+
+// --------- KI-BOT mit Denkanimation ---------
+function levenshtein(a, b) {
+  if (!a) return b.length;
+  if (!b) return a.length;
+  const m = a.length, n = b.length;
+  const dp = Array.from({length: n+1}, (_,i) => new Array(m+1));
+  for (let i=0;i<=n;i++) dp[i][0]=i;
+  for (let j=0;j<=m;j++) dp[0][j]=j;
+  for (let i=1;i<=n;i++){
+    for (let j=1;j<=m;j++){
+      dp[i][j] = Math.min(
+        dp[i-1][j]+1,
+        dp[i][j-1]+1,
+        dp[i-1][j-1] + (b[i-1]===a[j-1]?0:1)
+      );
+    }
+  }
+  return dp[n][m];
+}
+function fuzzyFind(list, prop, text, maxDistPercent=0.35){
+  text = text.toLowerCase().trim();
+  if(!text) return null;
+  let best = null, bestScore = Infinity;
+  for(const item of list){
+    const cand = (item[prop]||'').toLowerCase();
+    if(!cand) continue;
+    const dist = levenshtein(text, cand);
+    const norm = dist / Math.max(cand.length, text.length);
+    if(norm < bestScore){
+      bestScore = norm;
+      best = {item, norm};
+    }
+  }
+  return best && best.norm <= maxDistPercent ? best.item : null;
+}
+function containsAny(text, words){
+  text = text.toLowerCase();
+  return words.some(w => text.includes(w));
+}
+const BOT_PERSONA = {
+  intro: "Ich bin dein Jedi-Assistent – frag mich alles über Star Wars!",
+  smallTalk: ["Interessant!", "Faszinierend!", "Möge die Macht mit dir sein.", "Hmmm… erzähl mir mehr.", "Ah, das erinnert mich an alte Geschichten."]
+};
+let BOT_CONTEXT = { lastUser:null, conversation:[] };
+function sleep(ms){ return new Promise(resolve=>setTimeout(resolve, ms)); }
+async function getBotReply(userText){
+  const text = userText.trim();
+  BOT_CONTEXT.lastUser = text;
+  BOT_CONTEXT.conversation.push({role:"user", content:text});
+  await sleep(300 + Math.random()*700);
+
+  const char = fuzzyFind(DATA.characters, 'name', text, 0.4);
+  if(char){
+    const askWho = containsAny(text, ['wer ist','wer','bio','biographie','erzähle']);
+    const base = askWho ? `${char.name} — ${char.role}: ${char.bio}` : `${char.name}: ${char.role}.`;
+    const v = Math.random()>0.5 ? " " + BOT_PERSONA.smallTalk[Math.floor(Math.random()*BOT_PERSONA.smallTalk.length)] : "";
+    return base + v;
+  }
+  const planet = fuzzyFind(DATA.planets, 'name', text, 0.35);
+  if(planet){
+    const v = Math.random()>0.5 ? " " + BOT_PERSONA.smallTalk[Math.floor(Math.random()*BOT_PERSONA.smallTalk.length)] : "";
+    return `${planet.name}: ${planet.brief}` + v;
+  }
+  const film = fuzzyFind(DATA.films, 'title', text, 0.4);
+  if(film){
+    return `${film.title} (${film.year}): ${film.desc}`;
+  }
+  if(containsAny(text, ['hallo','hi','servus','hey'])) return "Hallo! Möge die Macht mit dir sein!";
+  if(containsAny(text, ['danke','dank'])) return "Gern geschehen – die Macht sei mit dir!";
+  if(containsAny(text, ['hilfe','was kannst du','kannst du'])) return BOT_PERSONA.intro;
+  if(containsAny(text, ['macht','jedi','sith','droid','droide','imperium','rebellion','first order'])){
+    if(text.includes('macht')) return "Die Macht ist ein Energiefeld, das alles Lebende durchdringt – hell oder dunkel.";
+    if(text.includes('sith')) return "Sith nutzen die dunkle Seite der Macht und streben nach Kontrolle.";
+    if(text.includes('jedi')) return "Jedi sind Hüter des Friedens, ausgebildet in der Macht.";
+    if(text.includes('droid') || text.includes('droide')) return "Droiden helfen in vielen Missionen, z.B. R2-D2 oder C-3PO.";
+    if(text.includes('imperium')) return "Das Imperium kämpft gegen die Rebellion und kontrolliert viele Planeten.";
+    if(text.includes('rebellion')) return "Die Rebellion kämpft für Freiheit gegen das Imperium.";
+    if(text.includes('first order')) return "Die Erste Ordnung ist der dunkle Nachfolger des Imperiums.";
+  }
+  const suggestions = [
+    "Frag mich nach einem Charakter (z.B. 'Luke Skywalker'), einem Planeten (z.B. 'Tatooine') oder einem Film.",
+    "Du kannst auch nach 'Wer ist Yoda' oder 'Erzähl mir etwas über Hoth' fragen.",
+    "Ich kann Infos über Charaktere, Planeten und Filme geben."
+  ];
+  const v = BOT_PERSONA.smallTalk[Math.floor(Math.random()*BOT_PERSONA.smallTalk.length)];
+  return "Sorry, das verstehe ich nicht genau. " + suggestions[Math.floor(Math.random()*suggestions.length)] + " " + v;
+}
+
+// ---- UI KI-Bot mit blinkenden Punkten ----
+document.getElementById('openBotBtn').onclick = () => { document.getElementById('botModalBg').style.display = 'flex'; };
+document.getElementById('closeBotModal').onclick = () => { document.getElementById('botModalBg').style.display = 'none'; };
+document.getElementById('botSendBtn').onclick = async () => {
+  const input = document.getElementById('botInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const box = document.getElementById('botMessages');
+  box.innerHTML += `<div style="margin:6px 0;"><b>Du:</b> ${escapeHtml(text)}</div>`;
+  input.value = '';
+
+  const thinkingId = 'thinking_' + Date.now();
+  box.innerHTML += `
+    <div id="${thinkingId}" style="margin:6px 0;color:#aaa;"><b>Jedi-Bot:</b> 
+      <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+    </div>
+  `;
+  box.scrollTop = box.scrollHeight;
+
+  try{
+    const reply = await getBotReply(text);
+    const elem = document.getElementById(thinkingId);
+    if(elem) elem.outerHTML = `<div style="color:#ffe81f;margin:6px 0;"><b>Jedi-Bot:</b> ${escapeHtml(reply)}</div>`;
+    box.scrollTop = box.scrollHeight;
+  } catch(e){
+    const elem = document.getElementById(thinkingId);
+    if(elem) elem.outerHTML = `<div style="color:#f88;margin:6px 0;"><b>Jedi-Bot:</b> Fehler beim Antworten.</div>`;
+    console.error(e);
+  }
+};
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+// --------- Admin Panel ---------
+document.getElementById('openAdminBtn').onclick=()=>{document.getElementById('adminModalBg').style.display='flex';};
+document.getElementById('adminLoginBtn').onclick=()=>{
+  const pass=document.getElementById('adminPassInput').value;
+  if(pass==='starwars123'){
+    document.getElementById('adminPanel').style.display='block';
+    document.getElementById('adminEditArea').value=JSON.stringify(DATA,null,2);
+  } else alert('Falsches Passwort!');
+};
+document.getElementById('saveDataBtn').onclick=()=>{
+  try{
+    DATA=JSON.parse(document.getElementById('adminEditArea').value);
+    renderAll();
+    alert('Daten aktualisiert!');
+  }catch(e){alert('Fehlerhafte JSON-Daten');}
+};
+</script>
+</body>
+</html>
