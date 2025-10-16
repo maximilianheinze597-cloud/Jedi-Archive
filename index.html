@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedi Archive</title>
+<style>
+body { font-family: 'Arial', sans-serif; margin:0; background:#0b0b0b; color:#fff; overflow-x:hidden; }
+header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:#111; }
+.logo { height:50px; width:auto; border-radius:8px; object-fit:contain; }
+h1 { margin:0; font-size:1.4em; color:#ffe81f; }
+.section { padding:15px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; }
+.card { position: relative; background:#222; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; align-items:center; text-align:center; }
+.card img { width:100%; height:180px; object-fit:cover; }
+.card .overlay { position:absolute; bottom:0; width:100%; background: rgba(0,0,0,0.6); color:#ffe81f; padding:5px; font-size:0.9em; text-align:center; }
+.btn { background:#ffe81f; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; font-weight:bold; }
+.btn:hover { background:#fff24d; }
+#botModalBg, #trailerModalBg { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; }
+#botModal { background:#222; padding:20px; border-radius:10px; width:90%; max-width:400px; color:white; }
+textarea { width:100%; height:80px; }
+input, button { font-family:inherit; }
+/* Denkpunkte Animation */
+@keyframes blink { 0% { opacity:0.2; } 20% { opacity:1; } 100% { opacity:0.2; } }
+.dot { display:inline-block; animation: blink 1s infinite; font-weight:bold; color:#aaa; }
+.dot:nth-child(2){ animation-delay:0.2s; }
+.dot:nth-child(3){ animation-delay:0.4s; }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6c/Star_Wars_Logo.svg" class="logo" alt="Jedi Archives Logo">
+    <h1>Jedi Archive</h1>
+  </div>
+  <div>
+    <button id="themeToggle" class="btn">🌗 Theme</button>
+    <button id="playMusicBtn" class="btn">🎵 Musik</button>
+    <button id="openBotBtn" class="btn">🤖 KI-Bot</button>
+    <button id="openAdminBtn" class="btn">⚙️ Admin</button>
+  </div>
+</header>
+
+<audio id="music" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" preload="none" loop></audio>
+<audio id="r2d2" src="https://www.soundjay.com/button/beep-07.mp3" preload="auto"></audio>
+
+<div class="section">
+  <input id="q" placeholder="Suche..." style="width:100%;padding:8px;border-radius:5px;border:none;margin-bottom:10px;">
+</div>
+
+<div class="section" id="characters">
+  <h2>Charaktere</h2>
+  <div id="characters-grid" class="grid"></div>
+</div>
+
+<div class="section" id="planets">
+  <h2>Planeten</h2>
+  <div id="planets-grid" class="grid"></div>
+</div>
+
+<div class="section" id="films">
+  <h2>Filme</h2>
+  <div id="films-grid" class="grid"></div>
+</div>
+
+<!-- KI Bot Modal -->
+<div id="botModalBg">
+  <div id="botModal">
+    <h3>🤖 Jedi KI-Bot</h3>
+    <div id="botMessages" style="height:200px;overflow:auto;border:1px solid #333;padding:5px;margin-bottom:10px;"></div>
+    <input id="botInput" placeholder="Frag mich etwas über Star Wars..." style="width:100%;padding:5px;">
+    <button id="botSendBtn" class="btn">Senden</button>
+    <button id="closeBotModal" class="btn" style="background:#444;color:#fff;">Schließen</button>
+  </div>
+</div>
+
+<!-- Trailer Modal -->
+<div id="trailerModalBg">
+  <div style="position:relative;width:90%;max-width:800px;">
+    <iframe id="trailerFrame" width="100%" height="450" src="" frameborder="0" allowfullscreen></iframe>
+    <button id="closeTrailerBtn" class="btn" style="position:absolute;top:5px;right:5px;">❌ Schließen</button>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;">
+  <div id="adminModal" style="background:#222;padding:20px;border-radius:10px;width:90%;max-width:400px;color:white;">
+    <h3>⚙️ Admin-Login</h3>
+    <input id="adminPassInput" type="password" placeholder="Passwort eingeben" style="width:100%;padding:5px;">
+    <button id="adminLoginBtn" class="btn" style="margin-top:10px;">Login</button>
+    <div id="adminPanel" style="display:none;margin-top:15px;">
+      <textarea id="adminEditArea"></textarea>
+      <button id="saveDataBtn" class="btn" style="margin-top:10px;">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// -------- DATA ---------
+let DATA = {
+  characters: [
+    {name:'Luke Skywalker', role:'Jedi Meister', bio:'Der legendäre Jedi, Sohn von Anakin Skywalker.', img:'https://upload.wikimedia.org/wikipedia/en/9/9b/Luke_Skywalker.png'},
+    {name:'Yoda', role:'Jedi Meister', bio:'Einer der mächtigsten Jedi-Meister in der Geschichte.', img:'https://upload.wikimedia.org/wikipedia/en/3/3e/Yoda_Empire_Strikes_Back.png'},
+    {name:'Leia Organa', role:'Prinzessin', bio:'Anführerin der Rebellion und Schwester von Luke.', img:'https://upload.wikimedia.org/wikipedia/en/1/1b/Leia_Organa.png'},
+    {name:'Obi-Wan Kenobi', role:'Jedi Meister', bio:'Lehrer von Anakin und Luke Skywalker.', img:'https://upload.wikimedia.org/wikipedia/en/3/32/ObiWanKenobi.png'},
+    {name:'Darth Vader', role:'Sith Lord', bio:'Früher Anakin Skywalker, jetzt Sith Lord.', img:'https://upload.wikimedia.org/wikipedia/en/7/76/Darth_Vader.jpg'},
+    {name:'Han Solo', role:'Smuggler', bio:'Bekannter Pilot des Millennium Falken.', img:'https://upload.wikimedia.org/wikipedia/en/3/3b/Han_Solo.png'}
+  ],
+  planets: [
+    {name:'Tatooine', brief:'Wüstenplanet und Heimat von Anakin und Luke.', img:'https://upload.wikimedia.org/wikipedia/commons/6/66/Tatooine_TPM.png'},
+    {name:'Coruscant', brief:'Zentralplanet der Galaxis und Sitz des Jedi-Rats.', img:'https://upload.wikimedia.org/wikipedia/commons/e/e7/Coruscant_Fanart.png'},
+    {name:'Naboo', brief:'Grüner, friedlicher Planet und Heimat von Padmé Amidala.', img:'https://upload.wikimedia.org/wikipedia/commons/8/8d/Naboo.jpg'},
+    {name:'Hoth', brief:'Eisplanet, Schauplatz der Rebellenbasis.', img:'https://upload.wikimedia.org/wikipedia/commons/4/4e/Hoth-ESB.png'},
+    {name:'Endor', brief:'Waldmond mit Ewoks.', img:'https://upload.wikimedia.org/wikipedia/commons/d/d4/Endor.jpg'}
+  ],
+  films: [
+    {title: 'Eine neue Hoffnung', year: 1977, desc: 'Der Beginn der klassischen Trilogie.', img: 'https://upload.wikimedia.org/wikipedia/en/8/87/StarWarsMoviePoster1977.jpg', trailer: 'https://www.youtube.com/embed/vZ734NWnAHA'},
+    {title: 'Das Imperium schlägt zurück', year: 1980, desc: 'Das Imperium bekämpft die Rebellion.', img: 'https://upload.wikimedia.org/wikipedia/en/3/3c/SW_-_Empire_Strikes_Back.jpg', trailer: 'https://www.youtube.com/embed/JNwNXF9Y6kY'},
+    {title: 'Die Rückkehr der Jedi-Ritter', year: 1983, desc: 'Luke stellt sich Darth Vader.', img: 'https://upload.wikimedia.org/wikipedia/en/b/b2/ReturnOfTheJediPoster1983.jpg', trailer: 'https://www.youtube.com/embed/7L8p7_SLzvU'},
+    {title: 'Das Erwachen der Macht', year: 2015, desc: 'Neue Bedrohungen tauchen auf.', img: 'https://upload.wikimedia.org/wikipedia/en/7/7f/Star_Wars_The_Force_Awakens_Theatrical_Poster.jpg', trailer: 'https://www.youtube.com/embed/sGbxmsDFVnE'}
+  ]
+};
+
+// -------- RENDER ---------
+function renderGrid(id, list, tpl){ document.getElementById(id).innerHTML=list.map(tpl).join('')||'<div class="small">Keine Einträge</div>'; }
+
+function renderAll(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  renderGrid('characters-grid', DATA.characters.filter(c=>c.name.toLowerCase().includes(q)||c.bio.toLowerCase().includes(q)), item=>`
+    <div class="card">
+      <img src="${item.img}" onerror="this.src='https://via.placeholder.com/180'">
+      <div class="overlay"><b>${item.name}</b><br>${item.role}</div>
+    </div>`);
+
+  renderGrid('planets-grid', DATA.planets.filter(p=>p.name.toLowerCase().includes(q)||p.brief.toLowerCase().includes(q)), p=>`
+    <div class="card">
+      <img src="${p.img}" onerror="this.src='https://via.placeholder.com/180'">
+      <div class="overlay"><b>${p.name}</b><br>${p.brief}</div>
+    </div>`);
+
+  renderGrid('films-grid', DATA.films.filter(f=>f.title.toLowerCase().includes(q)||f.desc.toLowerCase().includes(q)), f=>`
+    <div class="card">
+      <img src="${f.img}" onerror="this.src='https://via.placeholder.com/180'">
+      <div class="overlay"><b>${f.title} (${f.year})</b><br>${f.desc}</div>
+      <button class="btn" style="margin-top:5px;" onclick="playTrailer('${f.trailer}')">▶ Trailer</button>
+    </div>`);
+}
+renderAll();
+
+// -------- MUSIC ---------
+const music=document.getElementById('music');
+document.getElementById('playMusicBtn').onclick=()=>{ if(music.paused) music.play(); else music.pause(); };
+
+// -------- THEME ---------
+let dark=true;
+document.getElementById('themeToggle').onclick=()=>{
+  dark=!dark;
+  document.body.style.background=dark?'#0b0b0b':'#fafafa';
+  document.body.style.color=dark?'#fff':'#111';
+};
+
+// -------- KI-BOT ---------
+function escapeHtml(str){return String(str).replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
+const BOT_PERSONA={intro:"Ich bin dein Jedi-Assistent – frag mich alles über Star Wars!", smallTalk:["Interessant!","Faszinierend!","Möge die Macht mit dir sein.","Hmmm… erzähl mir mehr.","Ah, das erinnert mich an alte Geschichten."]};
+document.getElementById('openBotBtn').onclick=()=>{document.getElementById('botModalBg').style.display='flex';};
+document.getElementById('closeBotModal').onclick=()=>{document.getElementById('botModalBg').style.display='none';};
+document.getElementById('botSendBtn').onclick=async()=>{
+  const input=document.getElementById('botInput'); const text=input.value.trim(); if(!text) return;
+  const box=document.getElementById('botMessages');
+  box.innerHTML+=`<div style="margin:6px 0;"><b>Du:</b> ${escapeHtml(text)}</div>`; input.value='';
+  const thinkingId='thinking_'+Date.now();
+  box.innerHTML+=`<div id="${thinkingId}" style="margin:6px 0;color:#aaa;"><b>Jedi-Bot:</b> <span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>`;
+  box.scrollTop=box.scrollHeight;
+  try{
+    await new Promise(r=>setTimeout(r,500+Math.random()*800));
+    let reply=BOT_PERSONA.smallTalk[Math.floor(Math.random()*BOT_PERSONA.smallTalk.length)];
+    const elem=document.getElementById(thinkingId);
+    if(elem) elem.outerHTML=`<div style="color:#ffe81f;margin:6px 0;"><b>Jedi-Bot:</b> ${escapeHtml(reply)}</div>`;
+    box.scrollTop=box.scrollHeight;
+  }catch(e){const elem=document.getElementById(thinkingId); if(elem) elem.outerHTML=`<div style="color:#f88;margin:6px 0;"><b>Jedi-Bot:</b> Fehler beim Antworten.</div>`;}
+};
+
+// -------- TRAILER ---------
+function playTrailer(url){ const modal=document.getElementById('trailerModalBg'); const frame=document.getElementById('trailerFrame'); frame.src=url+"?autoplay=1"; modal.style.display='flex'; }
+document.getElementById('closeTrailerBtn').onclick=()=>{ const modal=document.getElementById('trailerModalBg'); const frame=document.getElementById('trailerFrame'); frame.src=""; modal.style.display='none'; };
+
+// -------- ADMIN ---------
+document.getElementById('openAdminBtn').onclick=()=>{document.getElementById('adminModalBg').style.display='flex';};
+document.getElementById('adminLoginBtn').onclick=()=>{const pass=document.getElementById('adminPassInput').value;
+  if(pass==='starwars123'){document.getElementById('adminPanel').style.display='block';document.getElementById('adminEditArea').value=JSON.stringify(DATA,null,2);}
+  else alert('Falsches Passwort!');
+};
+document.getElementById('saveDataBtn').onclick=()=>{try{DATA=JSON.parse(document.getElementById('adminEditArea').value);renderAll();alert('Daten aktualisiert!');}catch(e){alert('Fehlerhafte JSON-Daten');}};
+</script>
+</body>
+</html>
