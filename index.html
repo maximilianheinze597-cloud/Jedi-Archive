@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jedi Archive</title>
+<style>
+  body { font-family: 'Arial', sans-serif; margin:0; background:#0b0b0b; color:#fff; overflow-x:hidden; }
+  header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; background:#111; }
+  .logo { height:60px; border-radius:8px; object-fit:contain; transition:filter 0.3s; }
+  .logo:hover { filter: drop-shadow(0 0 8px #ffe81f); }
+  h1 { margin:0; font-size:1.4em; color:#ffe81f; }
+  .section { padding:15px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:10px; }
+  .card { background:#222; padding:10px; border-radius:10px; text-align:center; }
+  .thumb { width:100%; border-radius:10px; margin-bottom:5px; }
+  .btn { background:#ffe81f; border:none; padding:6px 10px; border-radius:5px; cursor:pointer; font-weight:bold; text-decoration:none; display:inline-block; }
+  .btn:hover { background:#fff24d; }
+  #botModalBg { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; }
+  #botModal { background:#222; padding:20px; border-radius:10px; width:90%; max-width:400px; color:white; }
+  textarea { width:100%; height:80px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER MIT LOGO -->
+<header>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="logo.PNG" class="logo" alt="Jedi Archives Logo">
+    <h1>Jedi Archive</h1>
+  </div>
+  <div>
+    <button id="themeToggle" class="btn">🌗 Theme</button>
+    <button id="playMusicBtn" class="btn">🎵 Musik</button>
+    <button id="openBotBtn" class="btn">🤖 KI-Bot</button>
+    <button id="openAdminBtn" class="btn">⚙️ Admin</button>
+  </div>
+</header>
+
+<!-- MUSIK -->
+<audio id="music" src="cantina_blues.mp3" preload="none" loop></audio>
+
+<!-- SUCHE -->
+<div class="section">
+  <input id="q" placeholder="Suche..." style="width:100%;padding:8px;border-radius:5px;border:none;margin-bottom:10px;">
+</div>
+
+<!-- CHARAKTERE -->
+<div class="section" id="characters">
+  <h2>Charaktere</h2>
+  <div id="characters-grid" class="grid"></div>
+</div>
+
+<!-- PLANETEN -->
+<div class="section" id="planets">
+  <h2>Planeten</h2>
+  <div id="planets-grid" class="grid"></div>
+</div>
+
+<!-- FILME -->
+<div class="section" id="films">
+  <h2>Filme</h2>
+  <div id="films-grid" class="grid"></div>
+</div>
+
+<!-- KI Bot Modal -->
+<div id="botModalBg">
+  <div id="botModal">
+    <h3>🤖 Jedi KI-Bot</h3>
+    <div id="botMessages" style="height:200px;overflow:auto;border:1px solid #333;padding:5px;margin-bottom:10px;"></div>
+    <input id="botInput" placeholder="Frag mich etwas über Star Wars..." style="width:100%;padding:5px;">
+    <button id="botSendBtn" class="btn">Senden</button>
+    <button id="closeBotModal" class="btn" style="background:#444;color:#fff;">Schließen</button>
+  </div>
+</div>
+
+<!-- Admin Modal -->
+<div id="adminModalBg" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;">
+  <div id="adminModal" style="background:#222;padding:20px;border-radius:10px;width:90%;max-width:400px;color:white;">
+    <h3>⚙️ Admin-Login</h3>
+    <input id="adminPassInput" type="password" placeholder="Passwort eingeben" style="width:100%;padding:5px;">
+    <button id="adminLoginBtn" class="btn" style="margin-top:10px;">Login</button>
+    <div id="adminPanel" style="display:none;margin-top:15px;">
+      <textarea id="adminEditArea"></textarea>
+      <button id="saveDataBtn" class="btn" style="margin-top:10px;">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let DATA = {
+  characters: [
+    {name:'Luke Skywalker', role:'Jedi-Meister', bio:'Der Sohn von Anakin Skywalker. Er wuchs auf Tatooine auf, besiegte das Imperium und gründete den neuen Jedi-Orden.', img:'luke.jpg'},
+    {name:'Leia Organa', role:'Prinzessin & Generalin', bio:'Anführerin der Rebellion und Zwillingsschwester von Luke. Stark, mutig und weise.', img:'leia.jpg'},
+    {name:'Han Solo', role:'Schmuggler & Rebell', bio:'Pilot des Millennium Falken und Held der Rebellion. Liebt Freiheit, Witz und Leia.', img:'han.jpg'},
+    {name:'Yoda', role:'Jedi-Großmeister', bio:'Meister aller Jedi, klein in Größe, groß in Macht und Weisheit.', img:'yoda.jpg'},
+    {name:'Obi-Wan Kenobi', role:'Jedi-Meister', bio:'Mentor von Anakin und Luke. Hüter der Jedi-Werte.', img:'obiwan.jpg'},
+    {name:'Rey', role:'Jedi-Schülerin', bio:'Starke Machtnutzerin, die die letzte Hoffnung der Jedi verkörpert.', img:'rey.jpg'},
+    {name:'Darth Vader', role:'Sith-Lord', bio:'Einst Anakin Skywalker, verfiel der Dunklen Seite und wurde der gefürchtete Diener des Imperators.', img:'vader.jpg'},
+    {name:'Kylo Ren', role:'Sith-Schüler', bio:'Ben Solo, Sohn von Leia und Han, zerrissen zwischen Licht und Dunkelheit.', img:'kylo.jpg'},
+    {name:'Finn', role:'Ehemaliger Sturmtruppler', bio:'Verließ die Erste Ordnung, um für das Gute zu kämpfen.', img:'finn.jpg'}
+  ],
+  planets: [
+    {name:'Tatooine', brief:'Wüstenplanet und Heimat von Anakin und Luke Skywalker.', img:'tatooine.jpg'},
+    {name:'Coruscant', brief:'Zentrum der Galaxis und Sitz des Jedi-Ordens.', img:'coruscant.jpg'},
+    {name:'Naboo', brief:'Grüner Planet, Heimat von Padmé Amidala.', img:'naboo.jpg'},
+    {name:'Hoth', brief:'Eisplanet und Rebellenstützpunkt.', img:'hoth.jpg'},
+    {name:'Endor', brief:'Waldmond und Heimat der Ewoks.', img:'endor.jpg'},
+    {name:'Mustafar', brief:'Vulkanischer Planet, Ort von Anakins Untergang.', img:'mustafar.jpg'},
+    {name:'Jakku', brief:'Wüstenplanet, auf dem Rey lebte.', img:'jakku.jpg'},
+    {name:'Alderaan', brief:'Zerstört vom Todesstern. Heimat von Leia.', img:'alderaan.jpg'}
+  ],
+  films: [
+    {title:'Episode I: Die dunkle Bedrohung', year:1999, desc:'Ein junger Anakin Skywalker wird entdeckt und beginnt seine Reise.', img:'episode1.jpg', trailer:'https://www.youtube.com/watch?v=bD7bpG-zDJQ'},
+    {title:'Episode II: Angriff der Klonkrieger', year:2002, desc:'Die Klonkriege beginnen, Anakin verliebt sich in Padmé.', img:'episode2.jpg', trailer:'https://www.youtube.com/watch?v=gYbW1F_c9eM'},
+    {title:'Episode III: Die Rache der Sith', year:2005, desc:'Anakin fällt zur Dunklen Seite und wird zu Darth Vader.', img:'episode3.jpg', trailer:'https://www.youtube.com/watch?v=5UnjrG_N8hU'},
+    {title:'Episode IV: Eine neue Hoffnung', year:1977, desc:'Luke Skywalker tritt der Rebellion bei und zerstört den Todesstern.', img:'episode4.jpg', trailer:'https://www.youtube.com/watch?v=vZ734NWnAHA'},
+    {title:'Episode V: Das Imperium schlägt zurück', year:1980, desc:'Luke trainiert bei Yoda, während Vader die Rebellen jagt.', img:'episode5.jpg', trailer:'https://www.youtube.com/watch?v=JNwNXF9Y6kY'},
+    {title:'Episode VI: Die Rückkehr der Jedi-Ritter', year:1983, desc:'Luke stellt sich Vader und Palpatine auf Endor.', img:'episode6.jpg', trailer:'https://www.youtube.com/watch?v=7L8p7_SLzvU'},
+    {title:'Episode VII: Das Erwachen der Macht', year:2015, desc:'Rey entdeckt ihre Macht, während Kylo Ren aufsteigt.', img:'episode7.jpg', trailer:'https://www.youtube.com/watch?v=sGbxmsDFVnE'},
+    {title:'Episode VIII: Die letzten Jedi', year:2017, desc:'Die Macht erwacht in einer neuen Generation.', img:'episode8.jpg', trailer:'https://www.youtube.com/watch?v=Q0CbN8sfihY'},
+    {title:'Episode IX: Der Aufstieg Skywalkers', year:2019, desc:'Rey und Kylo stellen sich ihrer Bestimmung.', img:'episode9.jpg', trailer:'https://www.youtube.com/watch?v=8Qn_spdM5Zg'}
+  ]
+};
+
+// Rendering-Funktionen
+function renderGrid(id, list, tpl){
+  const el=document.getElementById(id);
+  el.innerHTML = list.map(tpl).join('') || '<div>Keine Einträge</div>';
+}
+
+function renderAll(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  renderGrid('characters-grid', DATA.characters.filter(c=>c.name.toLowerCase().includes(q)||c.bio.toLowerCase().includes(q)), c=>`
+    <div class="card">
+      <img src="${c.img}" class="thumb">
+      <b>${c.name}</b><br>
+      <small>${c.role}</small>
+      <p>${c.bio}</p>
+    </div>`);
+  renderGrid('planets-grid', DATA.planets.filter(p=>p.name.toLowerCase().includes(q)||p.brief.toLowerCase().includes(q)), p=>`
+    <div class="card">
+      <img src="${p.img}" class="thumb">
+      <b>${p.name}</b>
+      <p>${p.brief}</p>
+    </div>`);
+  renderGrid('films-grid', DATA.films.filter(f=>f.title.toLowerCase().includes(q)||f.desc.toLowerCase().includes(q)), f=>`
+    <div class="card">
+      <img src="${f.img}" class="thumb">
+      <b>${f.title}</b> (${f.year})
+      <p>${f.desc}</p>
+      <a href="${f.trailer}" target="_blank" class="btn">🎬 Trailer ansehen</a>
+    </div>`);
+}
+renderAll();
+
+// Musik
+const music=document.getElementById('music');
+document.getElementById('playMusicBtn').onclick=()=>{ if(music.paused) music.play(); else music.pause(); };
+
+// Theme Toggle
+let dark=true;
+document.getElementById('themeToggle').onclick=()=>{
+  dark=!dark;
+  document.body.style.background=dark?'#0b0b0b':'#fafafa';
+  document.body.style.color=dark?'#fff':'#111';
+};
+
+// KI-Bot
+document.getElementById('openBotBtn').onclick=()=>{document.getElementById('botModalBg').style.display='flex';};
+document.getElementById('closeBotModal').onclick=()=>{document.getElementById('botModalBg').style.display='none';};
+document.getElementById('botSendBtn').onclick=()=>{
+  const input=document.getElementById('botInput');
+  const text=input.value.trim(); if(!text) return;
+  const box=document.getElementById('botMessages');
+  box.innerHTML+=`<div>Du: ${text}</div>`;
+  input.value='';
+  let reply='Möge die Macht mit dir sein.';
+  DATA.characters.forEach(c=>{ if(text.toLowerCase().includes(c.name.toLowerCase())) reply=`${c.name}: ${c.bio}`; });
+  DATA.planets.forEach(p=>{ if(text.toLowerCase().includes(p.name.toLowerCase())) reply=`${p.name}: ${p.brief}`; });
+  box.innerHTML+=`<div style="color:#ffe81f">Jedi-Bot: ${reply}</div>`;
+  box.scrollTop=box.scrollHeight;
+};
+
+// Admin
+document.getElementById('openAdminBtn').onclick=()=>{document.getElementById('adminModalBg').style.display='flex';};
+document.getElementById('adminLoginBtn').onclick=()=>{
+  const pass=document.getElementById('adminPassInput').value;
+  if(pass==='starwars123'){
+    document.getElementById('adminPanel').style.display='block';
+    document.getElementById('adminEditArea').value=JSON.stringify(DATA,null,2);
+  } else alert('Falsches Passwort!');
+};
+document.getElementById('saveDataBtn').onclick=()=>{
+  try{ DATA=JSON.parse(document.getElementById('adminEditArea').value); renderAll(); alert('Daten aktualisiert!'); }
+  catch(e){alert('Fehlerhafte JSON-Daten');}
+};
+</script>
+
+</body>
+</html>
